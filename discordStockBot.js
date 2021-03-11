@@ -1,48 +1,71 @@
 // Config
-const { prefix, discToken, fhKey} = require('./config.json');
+const {prefix, discToken, fhKey} = require('./config.json');
 
 // Discord
 const Discord = require('discord.js');
 const discClient = new Discord.Client();
-discClient.login(discToken);
+discClient.login(discToken); 
 
 // Finnhub
 const finnhub = require('finnhub');
 const fh_api_key = finnhub.ApiClient.instance.authentications['api_key'];
-fh_api_key.apiKey = fhKey
-const fhClient = new finnhub.DefaultApi()
+fh_api_key.apiKey = fhKey;
+const fhClient = new finnhub.DefaultApi();
 
 
-discClient.on('message', message => {
+// Gets a current price of the stocks given
+function stockPrice(stockTickers, currentMessage) {
+    for (let i = 0; i < stockTickers.length; i++) {
+        fhClient.quote(stockTickers[i], (error,data,response) => {
+        console.log(stockTickers[i], data);
 
-    // Exit if the message doesn't start with the prefix
-    if (!message.content.startsWith(prefix) || message.author.bot) return;
-
-    // Tickers will be held in this variable
-    const inputTickers = message.content.substring(1).toUpperCase();
-
-
-    fhClient.quote(inputTickers, (error,data,response) => {
-        console.log( inputTickers, data)
-
-        // Percent change from previous close to current
-        percentChange = ((data.c - data.pc) / data.pc) * 100
-
-        if (data.c == 0) {
-            message.channel.send("```$" + inputTickers + " is not a stock ```");
-        }
-        else {
-        message.channel.send(
-            "```Stock: " + inputTickers + "\n" +
+        currentMessage.channel.send(
+            "```Stock: " + stockTickers[i] + "\n" +
             "-----------------------"  + "\n" +
             "Current Price: " + data.c + "\n" +
             "Low: " + data.l + "\n" +
             "High: " + data.h + "\n" +
             "Open: " + data.o + "\n" +
             "Previous Close: " + data.pc + "\n" +
-            "-----------------------"  + "\n" +
-            "Percent Change: " + percentChange.toFixed(2) + "%```"
+            "-----------------------```"  + "\n"
             );
-        }
-    });
+        });
+    }
+}
+
+// Help function
+function helpPrinter(currentMessage) {
+    currentMessage.channel.send(
+        "```Usable Functions: " + "\n" +
+        "-------------------" + "\n" +
+        "-p/price: Prints the current price as well as daily stats of the stock" +
+        "```"
+    );
+
+}
+
+// Start of script. Triggers on message
+discClient.on('message', message => {
+
+    // Exit if the message doesn't start with the prefix, if its a bot message, or if someone is just typing a dollar amount
+    if (!message.content.startsWith(prefix) || message.author.bot || message.content.match(/^'$'\d/)) return;
+    
+    // Holds the arguments after the prefix
+    const parameters = message.content.split(" ");
+    const action = parameters[0].substring(1);
+    parameters.shift();
+
+    // Determine which function to run
+    switch(action){
+        case 'price':
+        case 'p':
+            stockPrice(parameters, message);
+            break;
+        case 'help':
+            helpPrinter(message);
+            break;
+        default:
+            break;
+    }
 });
+
