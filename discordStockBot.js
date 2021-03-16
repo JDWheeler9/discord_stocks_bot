@@ -69,7 +69,7 @@ function findPercentChange(stockTickers, currentMessage) {
 discClient.on('message', message => {
 
     // Exit if the message doesn't start with the prefix, if its a bot message, or if someone is just typing a dollar amount
-    if (!message.content.startsWith(prefix) || message.author.bot || message.content.match(/^'$'\d/)) return;
+    if (!message.content.startsWith(prefix) || message.author.bot || message.content.match(/\$\d*/)) return;
     
     // Holds the arguments after the prefix
     const parameters = message.content.split(" ");
